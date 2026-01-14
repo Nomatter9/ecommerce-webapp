@@ -5,6 +5,7 @@ const db = require('../models');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
+const categoryRoutes = require('./routes/category.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
