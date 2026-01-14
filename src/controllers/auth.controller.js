@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const db = require('../../models');
+const { sendPasswordResetEmail, sendVerificationEmail } = require('../utils/emailService');
 const User = db.User;
 const Cart = db.Cart;
 
@@ -74,10 +75,16 @@ exports.register = async (req, res) => {
     // Generate token
     const token = generateToken(user.id);
 
-    // TODO: Send verification email
+    // Send verification email
+    try {
+      await sendVerificationEmail(user.email, user.verificationToken);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Don't fail registration if email fails
+    }
 
     res.status(201).json({
-      message: 'Registration successful',
+      message: 'Registration successful. Please check your email to verify your account.',
       user: formatUserResponse(user),
       token,
     });
@@ -243,12 +250,17 @@ exports.forgotPassword = async (req, res) => {
       resetPasswordExpires: resetExpires,
     });
 
-    // TODO: Send password reset email with link containing resetToken
-    // For now, log it (remove in production)
-    console.log('Password reset token:', resetToken);
+    // Send password reset email
+    try {
+      await sendPasswordResetEmail(user.email, resetToken);
+      console.log('Password reset email sent to:', user.email);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      // Still return success to prevent email enumeration
+    }
 
-    res.json({ 
-      message: 'If an account exists with this email, a reset link will be sent' 
+    res.json({
+      message: 'If an account exists with this email, a reset link will be sent'
     });
   } catch (error) {
     console.error('Forgot password error:', error);
