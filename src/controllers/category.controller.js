@@ -363,7 +363,8 @@ exports.deleteCategory = async (req, res) => {
     }
 
     // Check for subcategories
-    const subcategoryCount = await Category.count({ where: { parentId: id } });
+    
+    const subcategoryCount = await Category.count({ where: { parentId: category.id } });
     if (subcategoryCount > 0) {
       return res.status(400).json({
         message: 'Cannot delete category with subcategories. Delete or reassign subcategories first.',

@@ -20,5 +20,4 @@ router.get('/:id/products', validateCategoryId, categoryController.getCategoryPr
 router.post('/', authenticate, isAdmin, validateCreateCategory, categoryController.createCategory);
 router.put('/:id', authenticate, isAdmin, validateUpdateCategory, categoryController.updateCategory);
 router.delete('/:id', authenticate, isAdmin, validateCategoryId, categoryController.deleteCategory);
-
 module.exports = router;
