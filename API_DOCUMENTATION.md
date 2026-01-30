@@ -8,6 +8,7 @@ E-commerce Backend API - Complete Endpoint Reference
 
 - [Authentication](#authentication)
 - [Categories](#categories)
+- [Products](#products)
 - [Response Format](#response-format)
 - [Error Handling](#error-handling)
 
@@ -938,6 +939,631 @@ Authorization: Bearer <admin_token>
 
 ---
 
+## Products
+
+### 1. Get All Products
+
+**Endpoint:** `GET /products`
+**Access:** Public
+**Description:** Get all products with filtering, search, pagination, and sorting
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | integer | No | Page number (default: 1, min: 1) |
+| `limit` | integer | No | Items per page (default: 20, min: 1, max: 100) |
+| `categoryId` | integer | No | Filter by category ID |
+| `minPrice` | float | No | Minimum price filter |
+| `maxPrice` | float | No | Maximum price filter (must be >= minPrice) |
+| `brand` | string | No | Filter by brand name (1-100 chars) |
+| `isActive` | boolean | No | Filter by active status (`true` or `false`) |
+| `isFeatured` | boolean | No | Filter by featured status (`true` or `false`) |
+| `search` | string | No | Search in name, description, shortDescription, SKU (1-255 chars) |
+| `sortBy` | string | No | Sort field: `createdAt`, `price`, `name`, `averageRating`, `stockQuantity` (default: `createdAt`) |
+| `order` | string | No | Sort order: `ASC` or `DESC` (default: `DESC`) |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "iPhone 15 Pro",
+      "slug": "iphone-15-pro",
+      "description": "Latest Apple smartphone with advanced features...",
+      "shortDescription": "Latest Apple smartphone",
+      "price": 999.99,
+      "compareAtPrice": 1099.99,
+      "costPrice": 750.00,
+      "sku": "IPH15PRO-256-BLK",
+      "brand": "Apple",
+      "stockQuantity": 50,
+      "lowStockThreshold": 10,
+      "weight": 0.187,
+      "dimensions": {
+        "length": 14.67,
+        "width": 7.15,
+        "height": 0.83
+      },
+      "isActive": true,
+      "isFeatured": true,
+      "metaTitle": "iPhone 15 Pro - Buy Now",
+      "metaDescription": "Get the latest iPhone 15 Pro...",
+      "categoryId": 2,
+      "createdAt": "2026-01-18T10:00:00.000Z",
+      "updatedAt": "2026-01-18T10:00:00.000Z",
+      "images": [
+        {
+          "id": 1,
+          "url": "/uploads/products/iphone-15-pro-1.jpg",
+          "altText": "iPhone 15 Pro - Image 1",
+          "isPrimary": true,
+          "sortOrder": 0
+        }
+      ],
+      "category": {
+        "id": 2,
+        "name": "Smartphones",
+        "slug": "smartphones"
+      }
+    }
+  ],
+  "pagination": {
+    "total": 150,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 8
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 400 Bad Request - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Page must be a positive integer",
+      "param": "page",
+      "location": "query"
+    }
+  ]
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to fetch products"
+}
+```
+
+---
+
+### 2. Get Product by ID or Slug
+
+**Endpoint:** `GET /products/:id`
+**Access:** Public
+**Description:** Get single product details by ID or slug, including images, category, and recent reviews
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer/string | Yes | Product ID (numeric) or slug (string) |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "product": {
+    "id": 1,
+    "name": "iPhone 15 Pro",
+    "slug": "iphone-15-pro",
+    "description": "Latest Apple smartphone with advanced features...",
+    "shortDescription": "Latest Apple smartphone",
+    "price": 999.99,
+    "compareAtPrice": 1099.99,
+    "costPrice": 750.00,
+    "sku": "IPH15PRO-256-BLK",
+    "brand": "Apple",
+    "stockQuantity": 50,
+    "lowStockThreshold": 10,
+    "weight": 0.187,
+    "dimensions": {
+      "length": 14.67,
+      "width": 7.15,
+      "height": 0.83
+    },
+    "isActive": true,
+    "isFeatured": true,
+    "metaTitle": "iPhone 15 Pro - Buy Now",
+    "metaDescription": "Get the latest iPhone 15 Pro...",
+    "categoryId": 2,
+    "createdAt": "2026-01-18T10:00:00.000Z",
+    "updatedAt": "2026-01-18T10:00:00.000Z",
+    "images": [
+      {
+        "id": 1,
+        "url": "/uploads/products/iphone-15-pro-1.jpg",
+        "altText": "iPhone 15 Pro - Image 1",
+        "isPrimary": true,
+        "sortOrder": 0
+      }
+    ],
+    "category": {
+      "id": 2,
+      "name": "Smartphones",
+      "slug": "smartphones",
+      "parentId": 1
+    },
+    "reviews": [
+      {
+        "id": 1,
+        "rating": 5,
+        "comment": "Excellent product!",
+        "createdAt": "2026-01-20T10:00:00.000Z",
+        "user": {
+          "id": 1,
+          "firstName": "John",
+          "lastName": "Doe"
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 404 Not Found
+{
+  "message": "Product not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to fetch product"
+}
+```
+
+---
+
+### 3. Create Product
+
+**Endpoint:** `POST /products`
+**Access:** Protected (Seller/Admin Only)
+**Description:** Create a new product with optional image uploads
+
+#### Request Headers
+
+```
+Authorization: Bearer <seller_or_admin_token>
+Content-Type: multipart/form-data
+```
+
+#### Request Body (multipart/form-data)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Product name (3-255 chars) |
+| `description` | string | No | Detailed description (max 10000 chars) |
+| `shortDescription` | string | No | Brief description (max 500 chars) |
+| `sku` | string | Yes | Unique SKU (1-100 chars, alphanumeric, hyphens, underscores) |
+| `price` | float | Yes | Product price (min: 0, max 2 decimals) |
+| `compareAtPrice` | float | No | Original price for discounts (must be >= price) |
+| `costPrice` | float | No | Internal cost price (min: 0) |
+| `categoryId` | integer | Yes | Valid category ID |
+| `brand` | string | No | Brand name (max 100 chars) |
+| `stockQuantity` | integer | No | Stock quantity (default: 0, min: 0) |
+| `lowStockThreshold` | integer | No | Low stock alert threshold (default: 10, min: 0) |
+| `weight` | float | No | Product weight in kg (min: 0) |
+| `dimensions` | JSON string | No | Dimensions object: `{"length": 10, "width": 5, "height": 2}` (all >= 0) |
+| `isActive` | boolean | No | Active status (default: true) |
+| `isFeatured` | boolean | No | Featured status (default: false) |
+| `metaTitle` | string | No | SEO meta title (max 255 chars, defaults to name) |
+| `metaDescription` | string | No | SEO meta description (max 500 chars, defaults to shortDescription) |
+| `images` | file[] | No | Product images (multiple files supported) |
+
+**Note:** Slug is auto-generated from the product name
+
+#### Success Response (201 Created)
+
+```json
+{
+  "message": "Product created successfully",
+  "product": {
+    "id": 1,
+    "name": "iPhone 15 Pro",
+    "slug": "iphone-15-pro",
+    "description": "Latest Apple smartphone...",
+    "shortDescription": "Latest Apple smartphone",
+    "price": 999.99,
+    "compareAtPrice": 1099.99,
+    "costPrice": 750.00,
+    "sku": "IPH15PRO-256-BLK",
+    "brand": "Apple",
+    "stockQuantity": 50,
+    "lowStockThreshold": 10,
+    "weight": 0.187,
+    "dimensions": {
+      "length": 14.67,
+      "width": 7.15,
+      "height": 0.83
+    },
+    "isActive": true,
+    "isFeatured": true,
+    "metaTitle": "iPhone 15 Pro - Buy Now",
+    "metaDescription": "Get the latest iPhone 15 Pro",
+    "categoryId": 2,
+    "createdAt": "2026-01-18T10:00:00.000Z",
+    "updatedAt": "2026-01-18T10:00:00.000Z",
+    "images": [
+      {
+        "id": 1,
+        "url": "/uploads/products/iphone-15-pro-1.jpg",
+        "altText": "iPhone 15 Pro - Image 1",
+        "isPrimary": true,
+        "sortOrder": 0
+      }
+    ],
+    "category": {
+      "id": 2,
+      "name": "Smartphones",
+      "slug": "smartphones"
+    }
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 400 Bad Request - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Product name is required",
+      "param": "name",
+      "location": "body"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden - Not seller/admin
+{
+  "message": "Access denied. Seller privileges required."
+}
+
+// 404 Not Found - Category not found
+{
+  "message": "Category not found"
+}
+
+// 409 Conflict - SKU already exists
+{
+  "message": "SKU already exists"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to create product"
+}
+```
+
+---
+
+### 4. Update Product
+
+**Endpoint:** `PUT /products/:id`
+**Access:** Protected (Seller/Admin Only)
+**Description:** Update existing product details and optionally add new images
+
+#### Request Headers
+
+```
+Authorization: Bearer <seller_or_admin_token>
+Content-Type: multipart/form-data
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Product ID to update |
+
+#### Request Body (multipart/form-data)
+
+All fields are optional (same fields as Create Product):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Product name (3-255 chars) |
+| `description` | string | Detailed description (max 10000 chars) |
+| `shortDescription` | string | Brief description (max 500 chars) |
+| `sku` | string | Unique SKU (1-100 chars) |
+| `price` | float | Product price (min: 0) |
+| `compareAtPrice` | float | Original price |
+| `costPrice` | float | Internal cost price |
+| `categoryId` | integer | Valid category ID |
+| `brand` | string | Brand name (max 100 chars) |
+| `stockQuantity` | integer | Stock quantity (min: 0) |
+| `lowStockThreshold` | integer | Low stock threshold (min: 0) |
+| `weight` | float | Product weight (min: 0) |
+| `dimensions` | JSON string | Dimensions object |
+| `isActive` | boolean | Active status |
+| `isFeatured` | boolean | Featured status |
+| `metaTitle` | string | SEO meta title (max 255 chars) |
+| `metaDescription` | string | SEO meta description (max 500 chars) |
+| `images` | file[] | Additional product images (appended to existing) |
+
+**Note:** If name is updated, slug will be auto-regenerated. New images are appended to existing images.
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Product updated successfully",
+  "product": {
+    "id": 1,
+    "name": "iPhone 15 Pro Max",
+    "slug": "iphone-15-pro-max",
+    "description": "Updated description...",
+    "price": 1099.99,
+    // ... (same structure as create response)
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 400 Bad Request - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [...]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied. Seller privileges required."
+}
+
+// 404 Not Found - Product not found
+{
+  "message": "Product not found"
+}
+
+// 404 Not Found - Category not found
+{
+  "message": "Category not found"
+}
+
+// 409 Conflict - SKU already exists
+{
+  "message": "SKU already exists"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to update product"
+}
+```
+
+---
+
+### 5. Delete Product
+
+**Endpoint:** `DELETE /products/:id`
+**Access:** Protected (Seller/Admin Only)
+**Description:** Delete a product and all associated images
+
+#### Request Headers
+
+```
+Authorization: Bearer <seller_or_admin_token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Product ID to delete |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Product deleted successfully"
+}
+```
+
+#### Error Responses
+
+```json
+// 400 Bad Request - Invalid ID
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Product ID must be a valid integer",
+      "param": "id",
+      "location": "params"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied. Seller privileges required."
+}
+
+// 404 Not Found
+{
+  "message": "Product not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to delete product"
+}
+```
+
+---
+
+### 6. Delete Product Image
+
+**Endpoint:** `DELETE /products/:id/images/:imageId`
+**Access:** Protected (Seller/Admin Only)
+**Description:** Delete a specific image from a product
+
+#### Request Headers
+
+```
+Authorization: Bearer <seller_or_admin_token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Product ID |
+| `imageId` | integer | Yes | Image ID to delete |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Image deleted successfully"
+}
+```
+
+#### Error Responses
+
+```json
+// 400 Bad Request - Invalid parameters
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Product ID must be a valid integer",
+      "param": "id",
+      "location": "params"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied. Seller privileges required."
+}
+
+// 404 Not Found - Product not found
+{
+  "message": "Product not found"
+}
+
+// 404 Not Found - Image not found
+{
+  "message": "Image not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to delete image"
+}
+```
+
+---
+
+### 7. Set Primary Product Image
+
+**Endpoint:** `PUT /products/:id/images/:imageId/primary`
+**Access:** Protected (Seller/Admin Only)
+**Description:** Set a specific image as the primary/featured image for a product
+
+#### Request Headers
+
+```
+Authorization: Bearer <seller_or_admin_token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Product ID |
+| `imageId` | integer | Yes | Image ID to set as primary |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Primary image updated successfully"
+}
+```
+
+#### Error Responses
+
+```json
+// 400 Bad Request - Invalid parameters
+{
+  "message": "Validation failed",
+  "errors": [...]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied. Seller privileges required."
+}
+
+// 404 Not Found - Product not found
+{
+  "message": "Product not found"
+}
+
+// 404 Not Found - Image not found
+{
+  "message": "Image not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to set primary image"
+}
+```
+
+---
+
 ## Response Format
 
 ### Success Response Structure
@@ -1047,8 +1673,12 @@ The API supports three user roles:
 4. **Category Hierarchy:** Supports nested categories up to 3 levels deep in tree view
 5. **Circular References:** System prevents circular parent-child relationships in categories
 6. **Email Enumeration Prevention:** Password reset always returns success, regardless of email existence
+7. **Product Images:** Supports multiple image uploads via multipart/form-data; first uploaded image becomes primary
+8. **Product Access Control:** Only sellers and admins can create, update, or delete products
+9. **SKU Uniqueness:** Product SKU must be unique across all products
+10. **Price Validation:** Prices must have maximum 2 decimal places; compareAtPrice must be >= price if provided
 
 ---
 
-**Last Updated:** January 18, 2026
+**Last Updated:** January 30, 2026
 **API Version:** 1.0.0
