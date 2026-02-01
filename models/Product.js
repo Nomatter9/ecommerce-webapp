@@ -49,6 +49,15 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id',
       },
     },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id',
+      },
+      comment: 'Seller who created this product. NULL means admin-created product.',
+    },
     brand: {
       type: DataTypes.STRING(100),
       allowNull: true,
@@ -102,6 +111,7 @@ module.exports = (sequelize, DataTypes) => {
       { fields: ['slug'] },
       { fields: ['sku'] },
       { fields: ['categoryId'] },
+      { fields: ['userId'] },
       { fields: ['brand'] },
       { fields: ['isActive'] },
       { fields: ['isFeatured'] },

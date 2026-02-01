@@ -42,6 +42,7 @@ db.User.hasOne(db.Cart, { foreignKey: 'userId', as: 'cart' });
 db.User.hasMany(db.Order, { foreignKey: 'userId', as: 'orders' });
 db.User.hasMany(db.Review, { foreignKey: 'userId', as: 'reviews' });
 db.User.hasMany(db.Wishlist, { foreignKey: 'userId', as: 'wishlist' });
+db.User.hasMany(db.Product, { foreignKey: 'userId', as: 'products' });
 
 // Category associations (self-referencing for subcategories)
 db.Category.hasMany(db.Category, { foreignKey: 'parentId', as: 'subcategories' });
@@ -50,6 +51,7 @@ db.Category.hasMany(db.Product, { foreignKey: 'categoryId', as: 'products' });
 
 // Product associations
 db.Product.belongsTo(db.Category, { foreignKey: 'categoryId', as: 'category' });
+db.Product.belongsTo(db.User, { foreignKey: 'userId', as: 'seller' });
 db.Product.hasMany(db.ProductImage, { foreignKey: 'productId', as: 'images' });
 db.Product.hasMany(db.Review, { foreignKey: 'productId', as: 'reviews' });
 db.Product.hasMany(db.CartItem, { foreignKey: 'productId' });

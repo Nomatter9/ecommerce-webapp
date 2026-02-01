@@ -10,11 +10,11 @@ const {
   validateProductImage,
   validateDeleteProductImage
 } = require('../validators/product.validator');
-const { authenticate, isAdmin, isSeller } = require('../middleware/auth.middleware');
+const { authenticate, optionalAuth, isAdmin, isSeller } = require('../middleware/auth.middleware');
 const { uploadMultiple, handleUploadError } = require('../middleware/upload.middleware');
 
-// Public routes - anyone can view products
-router.get('/', validateListProducts, productController.getAllProducts);
+// Public routes - anyone can view products, but sellers get filtered results
+router.get('/', optionalAuth, validateListProducts, productController.getAllProducts);
 router.get('/:id', productController.getProduct);
 
 // Protected routes - admin and seller only

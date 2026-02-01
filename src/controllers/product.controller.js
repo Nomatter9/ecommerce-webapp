@@ -100,6 +100,7 @@ exports.createProduct = async (req, res) => {
       compareAtPrice,
       costPrice,
       categoryId,
+      userId: req.user.role === 'admin' ? null : req.user.id, // NULL for admin, userId for sellers
       brand,
       stockQuantity: stockQuantity || 0,
       lowStockThreshold: lowStockThreshold || 10,
@@ -121,7 +122,7 @@ exports.createProduct = async (req, res) => {
           const imageData = processedImages[i];
           await ProductImage.create({
             productId: product.id,
-            url: imageData.versions.originalUrl,
+            url: imageData.url,
             altText: `${product.name} - Image ${i + 1}`,
             isPrimary: i === 0, // First image is primary
             sortOrder: i
@@ -228,6 +229,11 @@ exports.getAllProducts = async (req, res) => {
       ];
     }
 
+    // If user is a seller (not admin), only show their products
+    if (req.user && req.user.role === 'seller') {
+      where.userId = req.user.id;
+    }
+
     const offset = (page - 1) * limit;
 
     // Fetch products
@@ -244,6 +250,11 @@ exports.getAllProducts = async (req, res) => {
           model: Category,
           as: 'category',
           attributes: ['id', 'name', 'slug']
+        },
+        {
+          model: db.User,
+          as: 'seller',
+          attributes: ['id', 'firstName', 'lastName', 'email']
         }
       ],
       limit: parseInt(limit),
@@ -291,6 +302,11 @@ exports.getProduct = async (req, res) => {
           model: Category,
           as: 'category',
           attributes: ['id', 'name', 'slug', 'parentId']
+        },
+        {
+          model: db.User,
+          as: 'seller',
+          attributes: ['id', 'firstName', 'lastName', 'email']
         },
         {
           model: Review,
@@ -345,6 +361,14 @@ exports.updateProduct = async (req, res) => {
         deleteUploadedFiles(req.files);
       }
       return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Sellers can only update their own products, admins can update any
+    if (req.user.role === 'seller' && product.userId !== req.user.id) {
+      if (req.files) {
+        deleteUploadedFiles(req.files);
+      }
+      return res.status(403).json({ message: 'You can only update your own products' });
     }
 
     const {
@@ -461,7 +485,7 @@ exports.updateProduct = async (req, res) => {
           const imageData = processedImages[i];
           await ProductImage.create({
             productId: product.id,
-            url: imageData.versions.originalUrl,
+            url: imageData.url,
             altText: `${product.name} - Image ${maxSortOrder + i + 2}`,
             isPrimary: false,
             sortOrder: maxSortOrder + i + 1
@@ -532,6 +556,11 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Sellers can only delete their own products, admins can delete any
+    if (req.user.role === 'seller' && product.userId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only delete your own products' });
+    }
+
     // Delete all product images from filesystem
     if (product.images && product.images.length > 0) {
       for (const image of product.images) {
@@ -577,6 +606,11 @@ exports.deleteProductImageById = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Sellers can only delete images from their own products, admins can delete any
+    if (req.user.role === 'seller' && product.userId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only manage your own products' });
+    }
+
     const image = await ProductImage.findOne({
       where: {
         id: imageId,
@@ -618,6 +652,11 @@ exports.setPrimaryImage = async (req, res) => {
     const product = await Product.findByPk(id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Sellers can only manage images for their own products, admins can manage any
+    if (req.user.role === 'seller' && product.userId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only manage your own products' });
     }
 
     const image = await ProductImage.findOne({
