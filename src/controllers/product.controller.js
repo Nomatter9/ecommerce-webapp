@@ -23,7 +23,7 @@ exports.createProduct = async (req, res) => {
       if (req.files) {
         deleteUploadedFiles(req.files);
       }
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array()
       });
@@ -175,7 +175,7 @@ exports.getAllProducts = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array()
       });
@@ -536,7 +536,7 @@ exports.deleteProduct = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array()
       });
@@ -593,7 +593,7 @@ exports.deleteProductImageById = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array()
       });

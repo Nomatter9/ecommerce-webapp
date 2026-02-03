@@ -39,9 +39,9 @@ exports.register = async (req, res) => {
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
+      return res.status(422).json({
+        message: 'Validation failed',
+        errors: errors.array()
       });
     }
 
@@ -103,9 +103,9 @@ exports.login = async (req, res) => {
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
+      return res.status(422).json({
+        message: 'Validation failed',
+        errors: errors.array()
       });
     }
 

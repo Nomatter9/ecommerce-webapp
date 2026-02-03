@@ -111,7 +111,7 @@ exports.getCategoryById = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array(),
       });
@@ -157,7 +157,7 @@ exports.getCategoryBySlug = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array(),
       });
@@ -204,7 +204,7 @@ exports.createCategory = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array(),
       });
@@ -258,7 +258,7 @@ exports.updateCategory = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array(),
       });
@@ -348,7 +348,7 @@ exports.deleteCategory = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array(),
       });
@@ -399,7 +399,7 @@ exports.getCategoryProducts = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(422).json({
         message: 'Validation failed',
         errors: errors.array(),
       });
