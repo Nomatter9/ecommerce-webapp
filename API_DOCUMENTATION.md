@@ -9,6 +9,9 @@ E-commerce Backend API - Complete Endpoint Reference
 - [Authentication](#authentication)
 - [Categories](#categories)
 - [Products](#products)
+- [Cart](#cart)
+- [Wishlist](#wishlist)
+- [Orders](#orders)
 - [Response Format](#response-format)
 - [Error Handling](#error-handling)
 
@@ -61,7 +64,7 @@ Authorization: Bearer <token>
 #### Error Responses
 
 ```json
-// 400 Bad Request - Validation failed
+// 422 Unprocessable Entity - Validation failed
 {
   "message": "Validation failed",
   "errors": [
@@ -123,7 +126,7 @@ Authorization: Bearer <token>
 #### Error Responses
 
 ```json
-// 400 Bad Request - Validation failed
+// 422 Unprocessable Entity - Validation failed
 {
   "message": "Validation failed",
   "errors": [...]
@@ -1327,7 +1330,7 @@ All fields are optional (same fields as Create Product):
 #### Error Responses
 
 ```json
-// 400 Bad Request - Validation failed
+// 422 Unprocessable Entity - Validation failed
 {
   "message": "Validation failed",
   "errors": [...]
@@ -1564,6 +1567,1149 @@ Authorization: Bearer <seller_or_admin_token>
 
 ---
 
+## Cart
+
+### 1. Get Cart
+
+**Endpoint:** `GET /cart`
+**Access:** Protected (Requires Authentication)
+**Description:** Get user's shopping cart with all items
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Cart retrieved successfully",
+  "cart": {
+    "id": 1,
+    "userId": 1,
+    "totalItems": 3,
+    "subtotal": "2499.97",
+    "createdAt": "2026-01-18T10:00:00.000Z",
+    "updatedAt": "2026-01-20T15:30:00.000Z",
+    "items": [
+      {
+        "id": 1,
+        "cartId": 1,
+        "productId": 1,
+        "quantity": 2,
+        "priceAtAdd": "999.99",
+        "createdAt": "2026-01-20T15:30:00.000Z",
+        "updatedAt": "2026-01-20T15:30:00.000Z",
+        "product": {
+          "id": 1,
+          "name": "iPhone 15 Pro",
+          "slug": "iphone-15-pro",
+          "price": "999.99",
+          "stockQuantity": 50,
+          "isActive": true,
+          "images": [
+            {
+              "id": 1,
+              "url": "/uploads/products/iphone-15-pro-1.jpg",
+              "altText": "iPhone 15 Pro - Image 1"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve cart"
+}
+```
+
+---
+
+### 2. Add Item to Cart
+
+**Endpoint:** `POST /cart/items`
+**Access:** Protected (Requires Authentication)
+**Description:** Add a product to the cart or update quantity if already exists
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Request Body
+
+```json
+{
+  "productId": "integer (required, min: 1)",
+  "quantity": "integer (optional, default: 1, min: 1)"
+}
+```
+
+#### Success Response (201 Created)
+
+```json
+{
+  "message": "Item added to cart successfully",
+  "cart": {
+    "id": 1,
+    "userId": 1,
+    "totalItems": 3,
+    "subtotal": "2499.97",
+    "items": [...]
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Product ID is required",
+      "param": "productId",
+      "location": "body"
+    }
+  ]
+}
+
+// 400 Bad Request - Product not available
+{
+  "message": "Product is not available"
+}
+
+// 400 Bad Request - Insufficient stock
+{
+  "message": "Only 5 items available in stock"
+}
+
+// 404 Not Found - Product not found
+{
+  "message": "Product not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to add item to cart"
+}
+```
+
+---
+
+### 3. Update Cart Item Quantity
+
+**Endpoint:** `PUT /cart/items/:itemId`
+**Access:** Protected (Requires Authentication)
+**Description:** Update quantity of a specific cart item
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `itemId` | integer | Yes | Cart item ID |
+
+#### Request Body
+
+```json
+{
+  "quantity": "integer (required, min: 1)"
+}
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Cart item updated successfully",
+  "cart": {
+    "id": 1,
+    "userId": 1,
+    "totalItems": 5,
+    "subtotal": "3499.95",
+    "items": [...]
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [...]
+}
+
+// 400 Bad Request - Product no longer available
+{
+  "message": "Product is no longer available"
+}
+
+// 400 Bad Request - Insufficient stock
+{
+  "message": "Only 10 items available in stock"
+}
+
+// 404 Not Found - Cart not found
+{
+  "message": "Cart not found"
+}
+
+// 404 Not Found - Cart item not found
+{
+  "message": "Cart item not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to update cart item"
+}
+```
+
+---
+
+### 4. Remove Item from Cart
+
+**Endpoint:** `DELETE /cart/items/:itemId`
+**Access:** Protected (Requires Authentication)
+**Description:** Remove a specific item from cart
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `itemId` | integer | Yes | Cart item ID |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Item removed from cart successfully",
+  "cart": {
+    "id": 1,
+    "userId": 1,
+    "totalItems": 2,
+    "subtotal": "1499.98",
+    "items": [...]
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [...]
+}
+
+// 404 Not Found - Cart not found
+{
+  "message": "Cart not found"
+}
+
+// 404 Not Found - Cart item not found
+{
+  "message": "Cart item not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to remove item from cart"
+}
+```
+
+---
+
+### 5. Clear Cart
+
+**Endpoint:** `DELETE /cart`
+**Access:** Protected (Requires Authentication)
+**Description:** Remove all items from cart
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Cart cleared successfully",
+  "cart": {
+    "id": 1,
+    "userId": 1,
+    "totalItems": 0,
+    "subtotal": "0.00",
+    "createdAt": "2026-01-18T10:00:00.000Z",
+    "updatedAt": "2026-01-20T16:00:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 404 Not Found
+{
+  "message": "Cart not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to clear cart"
+}
+```
+
+---
+
+## Wishlist
+
+### 1. Get Wishlist
+
+**Endpoint:** `GET /wishlist`
+**Access:** Protected (Requires Authentication)
+**Description:** Get user's wishlist with all saved products
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Wishlist retrieved successfully",
+  "count": 2,
+  "wishlist": [
+    {
+      "id": 1,
+      "userId": 1,
+      "productId": 1,
+      "createdAt": "2026-01-20T10:00:00.000Z",
+      "updatedAt": "2026-01-20T10:00:00.000Z",
+      "product": {
+        "id": 1,
+        "name": "iPhone 15 Pro",
+        "slug": "iphone-15-pro",
+        "price": "999.99",
+        "compareAtPrice": "1099.99",
+        "stockQuantity": 50,
+        "isActive": true,
+        "images": [
+          {
+            "id": 1,
+            "url": "/uploads/products/iphone-15-pro-1.jpg",
+            "altText": "iPhone 15 Pro"
+          }
+        ],
+        "category": {
+          "id": 2,
+          "name": "Smartphones",
+          "slug": "smartphones"
+        }
+      }
+    }
+  ]
+}
+```
+
+#### Error Responses
+
+```json
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve wishlist"
+}
+```
+
+---
+
+### 2. Add to Wishlist
+
+**Endpoint:** `POST /wishlist`
+**Access:** Protected (Requires Authentication)
+**Description:** Add a product to the wishlist
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Request Body
+
+```json
+{
+  "productId": "integer (required, min: 1)"
+}
+```
+
+#### Success Response (201 Created)
+
+```json
+{
+  "message": "Product added to wishlist successfully",
+  "wishlistItem": {
+    "id": 1,
+    "userId": 1,
+    "productId": 1,
+    "createdAt": "2026-01-20T10:00:00.000Z",
+    "updatedAt": "2026-01-20T10:00:00.000Z",
+    "product": {
+      "id": 1,
+      "name": "iPhone 15 Pro",
+      "slug": "iphone-15-pro",
+      "price": "999.99",
+      "compareAtPrice": "1099.99",
+      "stockQuantity": 50,
+      "isActive": true,
+      "images": [...],
+      "category": {...}
+    }
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Product ID is required",
+      "param": "productId",
+      "location": "body"
+    }
+  ]
+}
+
+// 404 Not Found - Product not found
+{
+  "message": "Product not found"
+}
+
+// 409 Conflict - Already in wishlist
+{
+  "message": "Product already in wishlist"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to add item to wishlist"
+}
+```
+
+---
+
+### 3. Remove from Wishlist
+
+**Endpoint:** `DELETE /wishlist/:id`
+**Access:** Protected (Requires Authentication)
+**Description:** Remove a specific item from wishlist
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Wishlist item ID |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Item removed from wishlist successfully"
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [...]
+}
+
+// 404 Not Found
+{
+  "message": "Wishlist item not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to remove item from wishlist"
+}
+```
+
+---
+
+### 4. Clear Wishlist
+
+**Endpoint:** `DELETE /wishlist`
+**Access:** Protected (Requires Authentication)
+**Description:** Remove all items from wishlist
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Wishlist cleared successfully"
+}
+```
+
+#### Error Responses
+
+```json
+// 500 Internal Server Error
+{
+  "message": "Failed to clear wishlist"
+}
+```
+
+---
+
+### 5. Check if Product in Wishlist
+
+**Endpoint:** `GET /wishlist/check/:productId`
+**Access:** Protected (Requires Authentication)
+**Description:** Check if a product is in user's wishlist
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `productId` | integer | Yes | Product ID to check |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "inWishlist": true,
+  "wishlistItemId": 1
+}
+```
+
+#### Error Responses
+
+```json
+// 500 Internal Server Error
+{
+  "message": "Failed to check wishlist status"
+}
+```
+
+---
+
+## Orders
+
+### 1. Create Order from Cart
+
+**Endpoint:** `POST /orders`
+**Access:** Protected (Requires Authentication)
+**Description:** Create a new order from cart items
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Request Body
+
+```json
+{
+  "shippingAddressId": "integer (required, min: 1)",
+  "paymentMethod": "string (optional, max: 50 chars)",
+  "notes": "string (optional, max: 1000 chars)",
+  "couponCode": "string (optional, max: 50 chars)"
+}
+```
+
+#### Success Response (201 Created)
+
+```json
+{
+  "message": "Order created successfully",
+  "order": {
+    "id": 1,
+    "orderNumber": "ORD-20260120-00001",
+    "userId": 1,
+    "status": "pending",
+    "subtotal": "2499.97",
+    "shippingCost": "0.00",
+    "discount": "0.00",
+    "tax": "0.00",
+    "total": "2499.97",
+    "shippingAddressId": 1,
+    "shippingAddressSnapshot": {
+      "recipientName": "John Doe",
+      "phone": "+1234567890",
+      "streetAddress": "123 Main St",
+      "city": "Cape Town",
+      "province": "Western Cape",
+      "postalCode": "8001",
+      "country": "South Africa"
+    },
+    "paymentMethod": "Credit Card",
+    "paymentStatus": "pending",
+    "notes": "Leave at front door",
+    "createdAt": "2026-01-20T10:00:00.000Z",
+    "updatedAt": "2026-01-20T10:00:00.000Z",
+    "items": [
+      {
+        "id": 1,
+        "orderId": 1,
+        "productId": 1,
+        "productSnapshot": {
+          "name": "iPhone 15 Pro",
+          "sku": "IPH15PRO-256-BLK",
+          "description": "Latest Apple smartphone",
+          "brand": "Apple"
+        },
+        "quantity": 2,
+        "unitPrice": "999.99",
+        "totalPrice": "1999.98",
+        "status": "pending",
+        "product": {
+          "id": 1,
+          "name": "iPhone 15 Pro",
+          "slug": "iphone-15-pro",
+          "sku": "IPH15PRO-256-BLK",
+          "images": [...]
+        }
+      }
+    ],
+    "shippingAddress": {
+      "id": 1,
+      "recipientName": "John Doe",
+      "phone": "+1234567890",
+      "streetAddress": "123 Main St",
+      "city": "Cape Town",
+      "province": "Western Cape",
+      "postalCode": "8001",
+      "country": "South Africa"
+    }
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Shipping address ID is required",
+      "param": "shippingAddressId",
+      "location": "body"
+    }
+  ]
+}
+
+// 400 Bad Request - Cart is empty
+{
+  "message": "Cart is empty"
+}
+
+// 400 Bad Request - Stock validation failed
+{
+  "message": "Stock validation failed",
+  "errors": [
+    "iPhone 15 Pro: only 5 items available (requested 10)",
+    "Samsung Galaxy S24 is no longer available"
+  ]
+}
+
+// 404 Not Found - Shipping address not found
+{
+  "message": "Shipping address not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to create order"
+}
+```
+
+---
+
+### 2. Get All Orders
+
+**Endpoint:** `GET /orders`
+**Access:** Protected (Role-based)
+**Description:** Get orders based on user role (customers see own, sellers see orders with their products, admins see all)
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `status` | string | No | Filter by order status |
+| `paymentStatus` | string | No | Filter by payment status |
+| `page` | integer | No | Page number (default: 1) |
+| `limit` | integer | No | Items per page (default: 20) |
+
+**Valid Status Values:**
+- Order Status: `pending`, `confirmed`, `processing`, `shipped`, `out_for_delivery`, `delivered`, `cancelled`, `refunded`
+- Payment Status: `pending`, `paid`, `failed`, `refunded`
+
+#### Success Response (200 OK)
+
+```json
+{
+  "orders": [
+    {
+      "id": 1,
+      "orderNumber": "ORD-20260120-00001",
+      "userId": 1,
+      "status": "pending",
+      "subtotal": "2499.97",
+      "shippingCost": "0.00",
+      "discount": "0.00",
+      "tax": "0.00",
+      "total": "2499.97",
+      "paymentStatus": "pending",
+      "createdAt": "2026-01-20T10:00:00.000Z",
+      "items": [...],
+      "user": {
+        "id": 1,
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "john@example.com"
+      }
+    }
+  ],
+  "pagination": {
+    "total": 50,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 3
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve orders"
+}
+```
+
+---
+
+### 3. Get Order by ID
+
+**Endpoint:** `GET /orders/:id`
+**Access:** Protected (Role-based)
+**Description:** Get detailed order information
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Order ID |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Order retrieved successfully",
+  "order": {
+    "id": 1,
+    "orderNumber": "ORD-20260120-00001",
+    "userId": 1,
+    "status": "shipped",
+    "subtotal": "2499.97",
+    "shippingCost": "0.00",
+    "discount": "0.00",
+    "tax": "0.00",
+    "total": "2499.97",
+    "shippingAddressId": 1,
+    "shippingAddressSnapshot": {...},
+    "paymentMethod": "Credit Card",
+    "paymentStatus": "paid",
+    "trackingNumber": "TRK123456789",
+    "shippingCarrier": "DHL",
+    "estimatedDelivery": "2026-01-25T00:00:00.000Z",
+    "notes": "Leave at front door",
+    "createdAt": "2026-01-20T10:00:00.000Z",
+    "updatedAt": "2026-01-21T14:00:00.000Z",
+    "items": [...],
+    "shippingAddress": {...},
+    "user": {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890"
+    }
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [...]
+}
+
+// 403 Forbidden - Access denied
+{
+  "message": "Access denied"
+}
+
+// 404 Not Found
+{
+  "message": "Order not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve order"
+}
+```
+
+---
+
+### 4. Update Order Status
+
+**Endpoint:** `PUT /orders/:id/status`
+**Access:** Protected (Admin/Seller Only)
+**Description:** Update order status
+
+#### Request Headers
+
+```
+Authorization: Bearer <admin_or_seller_token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Order ID |
+
+#### Request Body
+
+```json
+{
+  "status": "string (required, valid order status)"
+}
+```
+
+**Valid Status Values:** `pending`, `confirmed`, `processing`, `shipped`, `out_for_delivery`, `delivered`, `cancelled`, `refunded`
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Order status updated successfully",
+  "order": {
+    "id": 1,
+    "orderNumber": "ORD-20260120-00001",
+    "status": "shipped",
+    "deliveredAt": null,
+    "updatedAt": "2026-01-21T14:00:00.000Z"
+  }
+}
+```
+
+**Note:** When status is set to `delivered`, the `deliveredAt` timestamp is automatically set.
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Invalid order status",
+      "param": "status",
+      "location": "body"
+    }
+  ]
+}
+
+// 403 Forbidden - Not authorized
+{
+  "message": "Access denied"
+}
+
+// 404 Not Found
+{
+  "message": "Order not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to update order status"
+}
+```
+
+---
+
+### 5. Update Shipping Information
+
+**Endpoint:** `PUT /orders/:id/shipping`
+**Access:** Protected (Admin/Seller Only)
+**Description:** Update order shipping details
+
+#### Request Headers
+
+```
+Authorization: Bearer <admin_or_seller_token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Order ID |
+
+#### Request Body
+
+All fields are optional:
+
+```json
+{
+  "trackingNumber": "string (optional, max: 100 chars)",
+  "shippingCarrier": "string (optional, max: 100 chars)",
+  "estimatedDelivery": "string (optional, ISO 8601 date)"
+}
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Shipping information updated successfully",
+  "order": {
+    "id": 1,
+    "orderNumber": "ORD-20260120-00001",
+    "trackingNumber": "TRK123456789",
+    "shippingCarrier": "DHL",
+    "estimatedDelivery": "2026-01-25T00:00:00.000Z",
+    "updatedAt": "2026-01-21T14:00:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [...]
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied"
+}
+
+// 404 Not Found
+{
+  "message": "Order not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to update shipping information"
+}
+```
+
+---
+
+### 6. Cancel Order
+
+**Endpoint:** `POST /orders/:id/cancel`
+**Access:** Protected (Customers: pending/confirmed only, Admin: any status)
+**Description:** Cancel an order and restore product stock
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Order ID |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Order cancelled successfully",
+  "order": {
+    "id": 1,
+    "orderNumber": "ORD-20260120-00001",
+    "status": "cancelled",
+    "updatedAt": "2026-01-21T14:00:00.000Z"
+  }
+}
+```
+
+**Note:** Product stock quantities are automatically restored when an order is cancelled.
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [...]
+}
+
+// 400 Bad Request - Cannot cancel
+{
+  "message": "Order cannot be cancelled. Please contact support."
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied"
+}
+
+// 404 Not Found
+{
+  "message": "Order not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to cancel order"
+}
+```
+
+---
+
+### 7. Get Order Statistics
+
+**Endpoint:** `GET /orders/stats`
+**Access:** Protected (Admin Only)
+**Description:** Get order statistics and metrics
+
+#### Request Headers
+
+```
+Authorization: Bearer <admin_token>
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Order statistics retrieved successfully",
+  "stats": {
+    "totalOrders": 150,
+    "pendingOrders": 12,
+    "processingOrders": 8,
+    "deliveredOrders": 120,
+    "cancelledOrders": 10,
+    "totalRevenue": 125000.00
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 403 Forbidden - Not admin
+{
+  "message": "Access denied"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve order statistics"
+}
+```
+
+---
+
 ## Response Format
 
 ### Success Response Structure
@@ -1594,11 +2740,12 @@ All error responses follow this structure:
 |-------------|-------------|
 | 200 | Success (OK) |
 | 201 | Resource created successfully |
-| 400 | Bad Request (validation failed) |
+| 400 | Bad Request (malformed request) |
 | 401 | Unauthorized (authentication required) |
 | 403 | Forbidden (insufficient permissions) |
 | 404 | Resource not found |
 | 409 | Conflict (duplicate resource) |
+| 422 | Unprocessable Entity (validation failed) |
 | 500 | Internal Server Error |
 
 ---
@@ -1680,5 +2827,5 @@ The API supports three user roles:
 
 ---
 
-**Last Updated:** January 30, 2026
+**Last Updated:** February 4, 2026
 **API Version:** 1.0.0
