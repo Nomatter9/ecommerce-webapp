@@ -24,6 +24,7 @@ const formatUserResponse = (user) => {
     lastName: user.lastName,
     email: user.email,
     phone: user.phone,
+    profilePicture: user.profilePicture,
     role: user.role,
     isVerified: user.isVerified,
     createdAt: user.createdAt,
@@ -178,19 +179,16 @@ exports.logout = async (req, res) => {
  */
 exports.changePassword = async (req, res) => {
   try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
     const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ 
-        message: 'Current password and new password are required' 
-      });
-    }
-
-    if (newPassword.length < 8) {
-      return res.status(400).json({ 
-        message: 'New password must be at least 8 characters' 
-      });
-    }
 
     // Get user with password
     const user = await User.findByPk(req.user.id);
@@ -277,14 +275,14 @@ exports.resetPassword = async (req, res) => {
     const { token, newPassword } = req.body;
 
     if (!token || !newPassword) {
-      return res.status(400).json({ 
-        message: 'Token and new password are required' 
+      return res.status(400).json({
+        message: 'Token and new password are required'
       });
     }
 
     if (newPassword.length < 8) {
-      return res.status(400).json({ 
-        message: 'Password must be at least 8 characters' 
+      return res.status(400).json({
+        message: 'Password must be at least 8 characters'
       });
     }
 
@@ -319,5 +317,78 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.error('Reset password error:', error);
     res.status(500).json({ message: 'Failed to reset password' });
+  }
+};
+
+/**
+ * Update user profile
+ * PUT /api/auth/update-profile
+ */
+exports.updateProfile = async (req, res) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { firstName, lastName, email, phone } = req.body;
+
+    // Get current user
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Build update object with only provided fields
+    const updateData = {};
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (phone !== undefined) updateData.phone = phone || null; // Allow clearing phone
+
+    // Handle email change - check if new email is already taken
+    if (email !== undefined && email !== user.email) {
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(409).json({ message: 'Email already in use' });
+      }
+      updateData.email = email;
+      // Optionally, you might want to set isVerified to false and send verification email
+      // updateData.isVerified = false;
+    }
+
+    // Handle profile picture upload
+    if (req.file) {
+      // Delete old profile picture if it exists
+      if (user.profilePicture) {
+        const fs = require('fs');
+        const path = require('path');
+        const oldFilePath = path.join(__dirname, '../../', user.profilePicture);
+        if (fs.existsSync(oldFilePath)) {
+          fs.unlinkSync(oldFilePath);
+        }
+      }
+      // Store relative path
+      updateData.profilePicture = `/uploads/profiles/${req.file.filename}`;
+    }
+
+    // Update user
+    await user.update(updateData);
+
+    // Fetch updated user
+    const updatedUser = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password', 'verificationToken', 'resetPasswordToken', 'resetPasswordExpires'] }
+    });
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: formatUserResponse(updatedUser),
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Failed to update profile' });
   }
 };

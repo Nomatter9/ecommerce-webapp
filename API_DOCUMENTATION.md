@@ -7,6 +7,9 @@ E-commerce Backend API - Complete Endpoint Reference
 ## Table of Contents
 
 - [Authentication](#authentication)
+- [User Profile Management](#user-profile-management)
+- [Address Management](#address-management)
+- [Admin User Management](#admin-user-management)
 - [Categories](#categories)
 - [Products](#products)
 - [Cart](#cart)
@@ -361,6 +364,1061 @@ Authorization: Bearer <token>
 // 500 Internal Server Error
 {
   "message": "Failed to change password"
+}
+```
+
+---
+
+## User Profile Management
+
+### 8. Update Profile
+
+**Endpoint:** `PUT /auth/update-profile`
+**Access:** Protected (Requires Authentication)
+**Description:** Update user profile details with optional profile picture upload
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+#### Request Body (multipart/form-data)
+
+All fields are optional:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `firstName` | string | First name (2-100 chars) |
+| `lastName` | string | Last name (2-100 chars) |
+| `email` | string | Email address (valid email, must be unique) |
+| `phone` | string | Phone number (valid format or empty string to clear) |
+| `profilePicture` | file | Profile picture image (max 2MB, jpg/jpeg/png/gif) |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Profile updated successfully",
+  "user": {
+    "id": 1,
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "+27123456789",
+    "profilePicture": "/uploads/profiles/user-1-1738742856789-123456789.jpg",
+    "role": "customer",
+    "isVerified": true,
+    "createdAt": "2026-01-18T10:00:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "First name cannot be empty",
+      "param": "firstName",
+      "location": "body"
+    }
+  ]
+}
+
+// 400 Bad Request - File too large
+{
+  "message": "File size exceeds the 2MB limit"
+}
+
+// 400 Bad Request - Invalid file type
+{
+  "message": "Only image files (jpg, jpeg, png, gif) are allowed"
+}
+
+// 401 Unauthorized - Not authenticated
+{
+  "message": "Access token is required"
+}
+
+// 404 Not Found - User not found
+{
+  "message": "User not found"
+}
+
+// 409 Conflict - Email already in use
+{
+  "message": "Email is already in use"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to update profile"
+}
+```
+
+**Note:** When uploading a new profile picture, the old profile picture is automatically deleted. Old profile picture path must exist on the server filesystem.
+
+---
+
+## Address Management
+
+### 1. Get All User Addresses
+
+**Endpoint:** `GET /addresses`
+**Access:** Protected (Requires Authentication)
+**Description:** Get all addresses for the authenticated user, ordered by default status and creation date
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "addresses": [
+    {
+      "id": 1,
+      "userId": 1,
+      "label": "Home",
+      "recipientName": "John Doe",
+      "phone": "+27123456789",
+      "streetAddress": "123 Main Street",
+      "addressLine2": "Apartment 4B",
+      "suburb": "Gardens",
+      "city": "Cape Town",
+      "province": "Western Cape",
+      "postalCode": "8001",
+      "country": "South Africa",
+      "isDefault": true,
+      "type": "both",
+      "createdAt": "2026-01-18T10:00:00.000Z",
+      "updatedAt": "2026-01-18T10:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "userId": 1,
+      "label": "Work",
+      "recipientName": "John Doe",
+      "phone": "+27987654321",
+      "streetAddress": "456 Business Ave",
+      "addressLine2": null,
+      "suburb": "CBD",
+      "city": "Johannesburg",
+      "province": "Gauteng",
+      "postalCode": "2001",
+      "country": "South Africa",
+      "isDefault": false,
+      "type": "shipping",
+      "createdAt": "2026-01-19T10:00:00.000Z",
+      "updatedAt": "2026-01-19T10:00:00.000Z"
+    }
+  ],
+  "count": 2
+}
+```
+
+#### Error Responses
+
+```json
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve addresses"
+}
+```
+
+---
+
+### 2. Get Address by ID
+
+**Endpoint:** `GET /addresses/:id`
+**Access:** Protected (Requires Authentication)
+**Description:** Get a specific address by ID (user can only access own addresses)
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Address ID |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "address": {
+    "id": 1,
+    "userId": 1,
+    "label": "Home",
+    "recipientName": "John Doe",
+    "phone": "+27123456789",
+    "streetAddress": "123 Main Street",
+    "addressLine2": "Apartment 4B",
+    "suburb": "Gardens",
+    "city": "Cape Town",
+    "province": "Western Cape",
+    "postalCode": "8001",
+    "country": "South Africa",
+    "isDefault": true,
+    "type": "both",
+    "createdAt": "2026-01-18T10:00:00.000Z",
+    "updatedAt": "2026-01-18T10:00:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Address ID must be a valid integer",
+      "param": "id",
+      "location": "params"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 404 Not Found
+{
+  "message": "Address not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve address"
+}
+```
+
+---
+
+### 3. Create Address
+
+**Endpoint:** `POST /addresses`
+**Access:** Protected (Requires Authentication)
+**Description:** Create a new address for the authenticated user
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### Request Body
+
+```json
+{
+  "label": "string (optional, max 50 chars)",
+  "recipientName": "string (required, 2-200 chars)",
+  "phone": "string (required, valid phone format)",
+  "streetAddress": "string (required, 5-255 chars)",
+  "addressLine2": "string (optional, max 255 chars)",
+  "suburb": "string (optional, max 100 chars)",
+  "city": "string (required, 2-100 chars)",
+  "province": "string (required, 2-100 chars)",
+  "postalCode": "string (required, 3-20 chars)",
+  "country": "string (optional, 2-100 chars, default: 'South Africa')",
+  "isDefault": "boolean (optional, default: false)",
+  "type": "string (optional, one of: 'shipping', 'billing', 'both', default: 'both')"
+}
+```
+
+#### Success Response (201 Created)
+
+```json
+{
+  "message": "Address created successfully",
+  "address": {
+    "id": 1,
+    "userId": 1,
+    "label": "Home",
+    "recipientName": "John Doe",
+    "phone": "+27123456789",
+    "streetAddress": "123 Main Street",
+    "addressLine2": "Apartment 4B",
+    "suburb": "Gardens",
+    "city": "Cape Town",
+    "province": "Western Cape",
+    "postalCode": "8001",
+    "country": "South Africa",
+    "isDefault": true,
+    "type": "both",
+    "createdAt": "2026-01-18T10:00:00.000Z",
+    "updatedAt": "2026-01-18T10:00:00.000Z"
+  }
+}
+```
+
+**Note:** If this is the first address for the user, it will automatically be set as default regardless of the `isDefault` value. If `isDefault` is set to `true`, all other addresses for the user will be set to `isDefault: false`.
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Recipient name is required",
+      "param": "recipientName",
+      "location": "body"
+    },
+    {
+      "msg": "Street address must be between 5 and 255 characters",
+      "param": "streetAddress",
+      "location": "body"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to create address"
+}
+```
+
+---
+
+### 4. Update Address
+
+**Endpoint:** `PUT /addresses/:id`
+**Access:** Protected (Requires Authentication)
+**Description:** Update an existing address (user can only update own addresses)
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Address ID to update |
+
+#### Request Body
+
+All fields are optional (same fields as Create Address):
+
+```json
+{
+  "label": "string (optional, max 50 chars)",
+  "recipientName": "string (optional, 2-200 chars)",
+  "phone": "string (optional, valid phone format)",
+  "streetAddress": "string (optional, 5-255 chars)",
+  "addressLine2": "string (optional, max 255 chars)",
+  "suburb": "string (optional, max 100 chars)",
+  "city": "string (optional, 2-100 chars)",
+  "province": "string (optional, 2-100 chars)",
+  "postalCode": "string (optional, 3-20 chars)",
+  "country": "string (optional, 2-100 chars)",
+  "isDefault": "boolean (optional)",
+  "type": "string (optional, one of: 'shipping', 'billing', 'both')"
+}
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Address updated successfully",
+  "address": {
+    "id": 1,
+    "userId": 1,
+    "label": "Home (Updated)",
+    "recipientName": "John Doe",
+    "phone": "+27123456789",
+    "streetAddress": "123 Main Street",
+    "addressLine2": "Apartment 4B",
+    "suburb": "Gardens",
+    "city": "Cape Town",
+    "province": "Western Cape",
+    "postalCode": "8001",
+    "country": "South Africa",
+    "isDefault": true,
+    "type": "both",
+    "createdAt": "2026-01-18T10:00:00.000Z",
+    "updatedAt": "2026-01-20T15:30:00.000Z"
+  }
+}
+```
+
+**Note:** If `isDefault` is changed to `true`, all other addresses for the user will be set to `isDefault: false`.
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Address ID must be a valid integer",
+      "param": "id",
+      "location": "params"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 404 Not Found
+{
+  "message": "Address not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to update address"
+}
+```
+
+---
+
+### 5. Set Default Address
+
+**Endpoint:** `PUT /addresses/:id/set-default`
+**Access:** Protected (Requires Authentication)
+**Description:** Set a specific address as the default address
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Address ID to set as default |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Default address updated successfully",
+  "address": {
+    "id": 2,
+    "userId": 1,
+    "label": "Work",
+    "recipientName": "John Doe",
+    "phone": "+27987654321",
+    "streetAddress": "456 Business Ave",
+    "addressLine2": null,
+    "suburb": "CBD",
+    "city": "Johannesburg",
+    "province": "Gauteng",
+    "postalCode": "2001",
+    "country": "South Africa",
+    "isDefault": true,
+    "type": "shipping",
+    "createdAt": "2026-01-19T10:00:00.000Z",
+    "updatedAt": "2026-01-20T16:00:00.000Z"
+  }
+}
+```
+
+**Note:** All other addresses for the user will automatically be set to `isDefault: false`.
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Address ID must be a valid integer",
+      "param": "id",
+      "location": "params"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 404 Not Found
+{
+  "message": "Address not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to set default address"
+}
+```
+
+---
+
+### 6. Delete Address
+
+**Endpoint:** `DELETE /addresses/:id`
+**Access:** Protected (Requires Authentication)
+**Description:** Delete an address (user can only delete own addresses)
+
+#### Request Headers
+
+```
+Authorization: Bearer <token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Address ID to delete |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Address deleted successfully",
+  "deletedAddressId": "1"
+}
+```
+
+**Note:** If the deleted address was the default address, the most recently created address will automatically be set as the new default.
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Address ID must be a valid integer",
+      "param": "id",
+      "location": "params"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 404 Not Found
+{
+  "message": "Address not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to delete address"
+}
+```
+
+---
+
+## Admin User Management
+
+### 1. Get All Users
+
+**Endpoint:** `GET /admin/users`
+**Access:** Protected (Admin Only)
+**Description:** Get all users with pagination and filtering
+
+#### Request Headers
+
+```
+Authorization: Bearer <admin_token>
+```
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | integer | No | Page number (default: 1, min: 1) |
+| `limit` | integer | No | Items per page (default: 10, min: 1, max: 100) |
+| `role` | string | No | Filter by role: `customer`, `admin`, `seller` |
+| `isVerified` | boolean | No | Filter by verification status (`true` or `false`) |
+| `search` | string | No | Search in firstName, lastName, email (min: 1 char) |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Users retrieved successfully",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+27123456789",
+      "profilePicture": "/uploads/profiles/user-1-1738742856789.jpg",
+      "role": "customer",
+      "isVerified": true,
+      "createdAt": "2026-01-18T10:00:00.000Z",
+      "updatedAt": "2026-01-20T15:30:00.000Z"
+    },
+    {
+      "id": 2,
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "email": "jane@example.com",
+      "phone": "+27987654321",
+      "profilePicture": null,
+      "role": "seller",
+      "isVerified": true,
+      "createdAt": "2026-01-19T10:00:00.000Z",
+      "updatedAt": "2026-01-19T10:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "total": 150,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 15
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Page must be a positive integer",
+      "param": "page",
+      "location": "query"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden - Not admin
+{
+  "message": "Access denied. Admin privileges required."
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve users"
+}
+```
+
+---
+
+### 2. Get User by ID
+
+**Endpoint:** `GET /admin/users/:id`
+**Access:** Protected (Admin Only)
+**Description:** Get detailed user information including statistics
+
+#### Request Headers
+
+```
+Authorization: Bearer <admin_token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | User ID |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "User retrieved successfully",
+  "user": {
+    "id": 1,
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "phone": "+27123456789",
+    "profilePicture": "/uploads/profiles/user-1-1738742856789.jpg",
+    "role": "customer",
+    "isVerified": true,
+    "createdAt": "2026-01-18T10:00:00.000Z",
+    "updatedAt": "2026-01-20T15:30:00.000Z"
+  },
+  "stats": {
+    "totalOrders": 15,
+    "totalSpent": "12450.00",
+    "addressCount": 3
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "User ID must be a valid integer",
+      "param": "id",
+      "location": "params"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied. Admin privileges required."
+}
+
+// 404 Not Found
+{
+  "message": "User not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve user"
+}
+```
+
+---
+
+### 3. Update User Role
+
+**Endpoint:** `PUT /admin/users/:id/role`
+**Access:** Protected (Admin Only)
+**Description:** Update a user's role
+
+#### Request Headers
+
+```
+Authorization: Bearer <admin_token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | User ID |
+
+#### Request Body
+
+```json
+{
+  "role": "string (required, one of: 'customer', 'admin', 'seller')"
+}
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "User role updated successfully",
+  "user": {
+    "id": 2,
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "jane@example.com",
+    "phone": "+27987654321",
+    "role": "seller",
+    "isVerified": true,
+    "createdAt": "2026-01-19T10:00:00.000Z",
+    "updatedAt": "2026-01-20T16:00:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "Role must be one of: customer, admin, seller",
+      "param": "role",
+      "location": "body"
+    }
+  ]
+}
+
+// 400 Bad Request - Cannot modify own role
+{
+  "message": "You cannot modify your own role"
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied. Admin privileges required."
+}
+
+// 404 Not Found
+{
+  "message": "User not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to update user role"
+}
+```
+
+---
+
+### 4. Update User Status
+
+**Endpoint:** `PUT /admin/users/:id/status`
+**Access:** Protected (Admin Only)
+**Description:** Update a user's verification status
+
+#### Request Headers
+
+```
+Authorization: Bearer <admin_token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | User ID |
+
+#### Request Body
+
+```json
+{
+  "isVerified": "boolean (required)"
+}
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "User status updated successfully",
+  "user": {
+    "id": 2,
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "jane@example.com",
+    "phone": "+27987654321",
+    "role": "seller",
+    "isVerified": true,
+    "createdAt": "2026-01-19T10:00:00.000Z",
+    "updatedAt": "2026-01-20T16:00:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "isVerified must be a boolean value",
+      "param": "isVerified",
+      "location": "body"
+    }
+  ]
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied. Admin privileges required."
+}
+
+// 404 Not Found
+{
+  "message": "User not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to update user status"
+}
+```
+
+---
+
+### 5. Delete User
+
+**Endpoint:** `DELETE /admin/users/:id`
+**Access:** Protected (Admin Only)
+**Description:** Delete a user account (cannot delete users with existing orders or self)
+
+#### Request Headers
+
+```
+Authorization: Bearer <admin_token>
+```
+
+#### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | User ID to delete |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "User deleted successfully"
+}
+```
+
+#### Error Responses
+
+```json
+// 422 Unprocessable Entity - Validation failed
+{
+  "message": "Validation failed",
+  "errors": [
+    {
+      "msg": "User ID must be a valid integer",
+      "param": "id",
+      "location": "params"
+    }
+  ]
+}
+
+// 400 Bad Request - Cannot delete self
+{
+  "message": "You cannot delete your own account"
+}
+
+// 400 Bad Request - User has orders
+{
+  "message": "Cannot delete user with 5 existing order(s). Consider deactivating instead."
+}
+
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied. Admin privileges required."
+}
+
+// 404 Not Found
+{
+  "message": "User not found"
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to delete user"
+}
+```
+
+---
+
+### 6. Get Dashboard Statistics
+
+**Endpoint:** `GET /admin/stats`
+**Access:** Protected (Admin Only)
+**Description:** Get system-wide user statistics
+
+#### Request Headers
+
+```
+Authorization: Bearer <admin_token>
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Statistics retrieved successfully",
+  "stats": {
+    "totalUsers": 1250,
+    "totalCustomers": 1100,
+    "totalSellers": 140,
+    "totalAdmins": 10,
+    "verifiedUsers": 980,
+    "unverifiedUsers": 270,
+    "newUsersThisMonth": 45,
+    "newUsersToday": 3
+  }
+}
+```
+
+#### Error Responses
+
+```json
+// 401 Unauthorized
+{
+  "message": "Access token is required"
+}
+
+// 403 Forbidden
+{
+  "message": "Access denied. Admin privileges required."
+}
+
+// 500 Internal Server Error
+{
+  "message": "Failed to retrieve statistics"
 }
 ```
 

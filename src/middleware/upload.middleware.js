@@ -2,10 +2,15 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure uploads directory exists
+// Ensure uploads directories exist
 const uploadsDir = path.join(__dirname, '../../uploads/products');
+const profileUploadsDir = path.join(__dirname, '../../uploads/profiles');
+
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(profileUploadsDir)) {
+  fs.mkdirSync(profileUploadsDir, { recursive: true });
 }
 
 // Configure storage
@@ -48,6 +53,33 @@ exports.uploadSingle = upload.single('image');
 
 // Middleware for multiple image uploads
 exports.uploadMultiple = upload.array('images', 10);
+
+// Configure storage for profile pictures
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, profileUploadsDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename: user-{userId}-timestamp.ext
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    const userId = req.user ? req.user.id : 'unknown';
+    cb(null, `user-${userId}-${uniqueSuffix}${ext}`);
+  }
+});
+
+// Configure multer for profile pictures
+const profileUpload = multer({
+  storage: profileStorage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB for profile pictures
+    files: 1 // Only one file allowed
+  }
+});
+
+// Middleware for profile picture upload
+exports.uploadProfilePicture = profileUpload.single('profilePicture');
 
 // Error handling middleware for multer errors
 exports.handleUploadError = (err, req, res, next) => {

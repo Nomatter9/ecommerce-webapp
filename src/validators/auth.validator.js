@@ -126,3 +126,44 @@ exports.validateChangePassword = [
       return true;
     }),
 ];
+
+/**
+ * Validation rules for updating user profile
+ */
+exports.validateUpdateProfile = [
+  body('firstName')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('First name cannot be empty')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('First name must be between 2 and 100 characters'),
+
+  body('lastName')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Last name cannot be empty')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Last name must be between 2 and 100 characters'),
+
+  body('email')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Email cannot be empty')
+    .isEmail()
+    .withMessage('Invalid email format')
+    .normalizeEmail(),
+
+  body('phone')
+    .optional()
+    .trim()
+    .custom((value) => {
+      // Allow empty string to clear phone number
+      if (value === '') return true;
+      // Otherwise validate it's a valid phone number
+      return /^[\d\s\+\-\(\)]+$/.test(value);
+    })
+    .withMessage('Invalid phone number format'),
+];
