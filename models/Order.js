@@ -69,12 +69,22 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
     },
     paymentStatus: {
-      type: DataTypes.ENUM('pending', 'paid', 'failed', 'refunded'),
+      type: DataTypes.ENUM('pending', 'paid', 'failed', 'refunded', 'cancelled'),
       defaultValue: 'pending',
     },
     paymentReference: {
       type: DataTypes.STRING(255),
       allowNull: true,
+    },
+    paymentIntentId: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: 'Stripe Payment Intent ID',
+    },
+    paidAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Timestamp when payment was completed',
     },
     trackingNumber: {
       type: DataTypes.STRING(100),
