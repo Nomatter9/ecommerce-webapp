@@ -1,4 +1,13 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+let _stripe;
+function getStripe() {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY is not configured. Please add it to your .env file.');
+    }
+    _stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  }
+  return _stripe;
+}
 
 /**
  * Create a Stripe Payment Intent
@@ -10,7 +19,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
  */
 exports.createPaymentIntent = async ({ amount, currency = 'zar', metadata = {} }) => {
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency: currency.toLowerCase(),
       metadata,
@@ -33,7 +42,7 @@ exports.createPaymentIntent = async ({ amount, currency = 'zar', metadata = {} }
  */
 exports.retrievePaymentIntent = async (paymentIntentId) => {
   try {
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
     return paymentIntent;
   } catch (error) {
     console.error('Stripe Retrieve Payment Intent Error:', error);
@@ -49,7 +58,7 @@ exports.retrievePaymentIntent = async (paymentIntentId) => {
  */
 exports.confirmPaymentIntent = async (paymentIntentId, paymentMethodId) => {
   try {
-    const paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
+    const paymentIntent = await getStripe().paymentIntents.confirm(paymentIntentId, {
       payment_method: paymentMethodId,
     });
     return paymentIntent;
@@ -66,7 +75,7 @@ exports.confirmPaymentIntent = async (paymentIntentId, paymentMethodId) => {
  */
 exports.cancelPaymentIntent = async (paymentIntentId) => {
   try {
-    const paymentIntent = await stripe.paymentIntents.cancel(paymentIntentId);
+    const paymentIntent = await getStripe().paymentIntents.cancel(paymentIntentId);
     return paymentIntent;
   } catch (error) {
     console.error('Stripe Cancel Payment Intent Error:', error);
@@ -87,7 +96,7 @@ exports.createRefund = async (paymentIntentId, amount = null) => {
       refundParams.amount = Math.round(amount * 100); // Convert to cents
     }
 
-    const refund = await stripe.refunds.create(refundParams);
+    const refund = await getStripe().refunds.create(refundParams);
     return refund;
   } catch (error) {
     console.error('Stripe Refund Error:', error);
@@ -108,7 +117,7 @@ exports.constructWebhookEvent = (payload, signature) => {
       throw new Error('Webhook secret not configured');
     }
 
-    const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    const event = getStripe().webhooks.constructEvent(payload, signature, webhookSecret);
     return event;
   } catch (error) {
     console.error('Webhook Signature Verification Error:', error);
@@ -123,7 +132,7 @@ exports.constructWebhookEvent = (payload, signature) => {
  */
 exports.retrievePaymentMethod = async (paymentMethodId) => {
   try {
-    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    const paymentMethod = await getStripe().paymentMethods.retrieve(paymentMethodId);
     return paymentMethod;
   } catch (error) {
     console.error('Stripe Retrieve Payment Method Error:', error);

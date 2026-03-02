@@ -8,6 +8,10 @@ const {
 } = require('../validators/payment.validator');
 const { authenticate } = require('../middleware/auth.middleware');
 
+// Simple checkout - creates a payment intent from amount (no auth/order required)
+// Intended for demo/static product pages
+router.post('/checkout', paymentController.createCheckoutIntent);
+
 // Create payment intent
 router.post(
   '/create-intent',

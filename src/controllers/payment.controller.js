@@ -3,6 +3,48 @@ const db = require('../../models');
 const paymentService = require('../services/payment.service');
 
 const Order = db.Order;
+const Payment = db.Payment;
+
+/**
+ * Create a simple checkout payment intent (no auth/order required)
+ * POST /api/payments/checkout
+ * Body: { amount: number (in rands), currency?: string }
+ */
+exports.createCheckoutIntent = async (req, res) => {
+  try {
+    const { amount, currency = 'zar' } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'A valid amount is required' });
+    }
+
+    const paymentIntent = await paymentService.createPaymentIntent({
+      amount,
+      currency,
+      metadata: { source: 'checkout_page' },
+    });
+
+    // Save payment record
+    await Payment.create({
+      stripePaymentIntentId: paymentIntent.id,
+      amount,
+      currency,
+      status: 'pending',
+      stripeMetadata: { source: 'checkout_page' },
+    });
+
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+    });
+  } catch (error) {
+    console.error('Checkout intent error:', error);
+    res.status(500).json({
+      message: 'Failed to create payment intent',
+      error: error.message,
+    });
+  }
+};
 
 /**
  * Create payment intent for an order
@@ -54,6 +96,17 @@ exports.createPaymentIntent = async (req, res) => {
     // Update order with payment intent ID
     await order.update({
       paymentIntentId: paymentIntent.id,
+    });
+
+    // Save payment record linked to order and user
+    await Payment.create({
+      stripePaymentIntentId: paymentIntent.id,
+      orderId: order.id,
+      userId: order.userId,
+      amount: parseFloat(order.total),
+      currency: 'zar',
+      status: 'pending',
+      stripeMetadata: paymentIntent.metadata,
     });
 
     res.json({
@@ -111,6 +164,26 @@ exports.confirmPayment = async (req, res) => {
         status: 'confirmed',
         paidAt: new Date(),
       });
+
+      // Update payment record with success details
+      const payment = await Payment.findOne({
+        where: { stripePaymentIntentId: paymentIntentId },
+      });
+      if (payment) {
+        const updateData = {
+          status: 'succeeded',
+          stripeMetadata: paymentIntent,
+        };
+        const card = paymentIntent.charges?.data?.[0]?.payment_method_details?.card;
+        if (card) {
+          updateData.paymentMethodType = 'card';
+          updateData.cardLast4 = card.last4;
+          updateData.cardBrand = card.brand;
+          updateData.cardExpMonth = card.exp_month;
+          updateData.cardExpYear = card.exp_year;
+        }
+        await payment.update(updateData);
+      }
 
       res.json({
         message: 'Payment confirmed successfully',
@@ -250,6 +323,26 @@ async function handlePaymentSucceeded(paymentIntent) {
       });
       console.log(`Order ${order.orderNumber} payment succeeded`);
     }
+
+    // Update payment record
+    const payment = await Payment.findOne({
+      where: { stripePaymentIntentId: paymentIntent.id },
+    });
+    if (payment) {
+      const updateData = {
+        status: 'succeeded',
+        stripeMetadata: paymentIntent,
+      };
+      const card = paymentIntent.charges?.data?.[0]?.payment_method_details?.card;
+      if (card) {
+        updateData.paymentMethodType = 'card';
+        updateData.cardLast4 = card.last4;
+        updateData.cardBrand = card.brand;
+        updateData.cardExpMonth = card.exp_month;
+        updateData.cardExpYear = card.exp_year;
+      }
+      await payment.update(updateData);
+    }
   } catch (error) {
     console.error('Error handling payment succeeded:', error);
   }
@@ -269,6 +362,18 @@ async function handlePaymentFailed(paymentIntent) {
       });
       console.log(`Order ${order.orderNumber} payment failed`);
     }
+
+    // Update payment record
+    const payment = await Payment.findOne({
+      where: { stripePaymentIntentId: paymentIntent.id },
+    });
+    if (payment) {
+      await payment.update({
+        status: 'failed',
+        failureReason: paymentIntent.last_payment_error?.message || 'Payment failed',
+        stripeMetadata: paymentIntent,
+      });
+    }
   } catch (error) {
     console.error('Error handling payment failed:', error);
   }
@@ -287,6 +392,17 @@ async function handlePaymentCanceled(paymentIntent) {
         paymentStatus: 'cancelled',
       });
       console.log(`Order ${order.orderNumber} payment canceled`);
+    }
+
+    // Update payment record
+    const payment = await Payment.findOne({
+      where: { stripePaymentIntentId: paymentIntent.id },
+    });
+    if (payment) {
+      await payment.update({
+        status: 'cancelled',
+        stripeMetadata: paymentIntent,
+      });
     }
   } catch (error) {
     console.error('Error handling payment canceled:', error);
@@ -312,6 +428,17 @@ async function handleChargeRefunded(charge) {
         status: 'refunded',
       });
       console.log(`Order ${order.orderNumber} refunded`);
+    }
+
+    // Update payment record
+    const payment = await Payment.findOne({
+      where: { stripePaymentIntentId: paymentIntentId },
+    });
+    if (payment) {
+      await payment.update({
+        status: 'refunded',
+        stripeMetadata: charge,
+      });
     }
   } catch (error) {
     console.error('Error handling charge refunded:', error);

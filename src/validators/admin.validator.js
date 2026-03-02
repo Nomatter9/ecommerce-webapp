@@ -76,3 +76,48 @@ exports.validateDeleteUser = [
     .isInt()
     .withMessage('User ID must be a valid integer'),
 ];
+
+/**
+ * Validation rules for listing payments
+ */
+exports.validateListPayments = [
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Page must be a positive integer'),
+
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('Limit must be between 1 and 100'),
+
+  query('status')
+    .optional()
+    .isIn(['pending', 'succeeded', 'failed', 'refunded', 'cancelled'])
+    .withMessage('Invalid status filter'),
+
+  query('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Start date must be a valid date'),
+
+  query('endDate')
+    .optional()
+    .isISO8601()
+    .withMessage('End date must be a valid date'),
+
+  query('search')
+    .optional()
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage('Search term cannot be empty'),
+];
+
+/**
+ * Validation rules for getting payment by ID
+ */
+exports.validateGetPayment = [
+  param('id')
+    .isInt()
+    .withMessage('Payment ID must be a valid integer'),
+];

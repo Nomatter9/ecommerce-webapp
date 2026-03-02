@@ -4,6 +4,7 @@ const db = require('../../models');
 const User = db.User;
 const Order = db.Order;
 const Product = db.Product;
+const Payment = db.Payment;
 
 /**
  * Get all users with pagination and filters
@@ -308,5 +309,167 @@ exports.getDashboardStats = async (req, res) => {
   } catch (error) {
     console.error('Get dashboard stats error:', error);
     res.status(500).json({ message: 'Failed to retrieve statistics' });
+  }
+};
+
+/**
+ * Get all payments with pagination and filters
+ * GET /api/admin/payments
+ */
+exports.getAllPayments = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        message: 'Validation failed',
+        errors: errors.array(),
+      });
+    }
+
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      startDate,
+      endDate,
+      search,
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // Build where clause
+    const where = {};
+    if (status) where.status = status;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt[Op.gte] = new Date(startDate);
+      if (endDate) where.createdAt[Op.lte] = new Date(endDate);
+    }
+    if (search) {
+      where.stripePaymentIntentId = { [Op.like]: `%${search}%` };
+    }
+
+    const { count, rows: payments } = await Payment.findAndCountAll({
+      where,
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+        {
+          model: Order,
+          as: 'order',
+          attributes: ['id', 'orderNumber', 'status', 'total'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+
+    res.json({
+      payments,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit),
+      },
+    });
+  } catch (error) {
+    console.error('Get all payments error:', error);
+    res.status(500).json({ message: 'Failed to retrieve payments' });
+  }
+};
+
+/**
+ * Get payment by ID
+ * GET /api/admin/payments/:id
+ */
+exports.getPaymentById = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        message: 'Validation failed',
+        errors: errors.array(),
+      });
+    }
+
+    const { id } = req.params;
+
+    const payment = await Payment.findByPk(id, {
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+        {
+          model: Order,
+          as: 'order',
+          attributes: ['id', 'orderNumber', 'status', 'total', 'paymentStatus'],
+        },
+      ],
+    });
+
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    res.json({ payment });
+  } catch (error) {
+    console.error('Get payment by ID error:', error);
+    res.status(500).json({ message: 'Failed to retrieve payment' });
+  }
+};
+
+/**
+ * Get payment statistics
+ * GET /api/admin/payments/stats
+ */
+exports.getPaymentStats = async (req, res) => {
+  try {
+    const totalPayments = await Payment.count();
+    const succeededPayments = await Payment.count({ where: { status: 'succeeded' } });
+    const failedPayments = await Payment.count({ where: { status: 'failed' } });
+    const pendingPayments = await Payment.count({ where: { status: 'pending' } });
+    const refundedPayments = await Payment.count({ where: { status: 'refunded' } });
+    const cancelledPayments = await Payment.count({ where: { status: 'cancelled' } });
+
+    const totalRevenue = await Payment.sum('amount', {
+      where: { status: 'succeeded' },
+    }) || 0;
+
+    const totalRefunded = await Payment.sum('amount', {
+      where: { status: 'refunded' },
+    }) || 0;
+
+    // Success rate
+    const completedAttempts = succeededPayments + failedPayments;
+    const successRate = completedAttempts > 0
+      ? ((succeededPayments / completedAttempts) * 100).toFixed(1)
+      : 0;
+
+    res.json({
+      totalPayments,
+      byStatus: {
+        succeeded: succeededPayments,
+        failed: failedPayments,
+        pending: pendingPayments,
+        refunded: refundedPayments,
+        cancelled: cancelledPayments,
+      },
+      revenue: {
+        total: parseFloat(totalRevenue),
+        refunded: parseFloat(totalRefunded),
+        net: parseFloat(totalRevenue) - parseFloat(totalRefunded),
+      },
+      successRate: parseFloat(successRate),
+    });
+  } catch (error) {
+    console.error('Get payment stats error:', error);
+    res.status(500).json({ message: 'Failed to retrieve payment statistics' });
   }
 };

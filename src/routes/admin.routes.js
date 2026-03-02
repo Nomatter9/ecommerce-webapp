@@ -6,7 +6,9 @@ const {
   validateGetUser,
   validateUpdateRole,
   validateUpdateStatus,
-  validateDeleteUser
+  validateDeleteUser,
+  validateListPayments,
+  validateGetPayment,
 } = require('../validators/admin.validator');
 const { authenticate, isAdmin } = require('../middleware/auth.middleware');
 
@@ -34,5 +36,18 @@ router.put('/users/:id/status', validateUpdateStatus, adminController.updateUser
 
 // Delete user
 router.delete('/users/:id', validateDeleteUser, adminController.deleteUser);
+
+/**
+ * Payment Management Routes
+ */
+
+// Get payment statistics (must be before /:id)
+router.get('/payments/stats', adminController.getPaymentStats);
+
+// Get all payments with filters and pagination
+router.get('/payments', validateListPayments, adminController.getAllPayments);
+
+// Get specific payment by ID
+router.get('/payments/:id', validateGetPayment, adminController.getPaymentById);
 
 module.exports = router;
