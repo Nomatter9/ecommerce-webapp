@@ -9,9 +9,10 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
  * @returns {Promise<Object>} Payment Intent object
  */
 exports.createPaymentIntent = async ({ amount, currency = 'zar', metadata = {} }) => {
+   const amountInCents = Math.round(Number(amount) * 100); 
   try {
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
+      amount: Math.round(amount * 100), 
       currency: currency.toLowerCase(),
       metadata,
       automatic_payment_methods: {
@@ -129,4 +130,5 @@ exports.retrievePaymentMethod = async (paymentMethodId) => {
     console.error('Stripe Retrieve Payment Method Error:', error);
     throw new Error(`Failed to retrieve payment method: ${error.message}`);
   }
+
 };

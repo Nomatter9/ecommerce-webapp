@@ -45,6 +45,7 @@ const generateOrderNumber = async () => {
  * Create order from cart
  * POST /api/orders
  */
+// Add this temporarily at the top of createOrder
 exports.createOrder = async (req, res) => {
   const transaction = await db.sequelize.transaction();
 

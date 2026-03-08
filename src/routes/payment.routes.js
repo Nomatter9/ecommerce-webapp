@@ -35,5 +35,6 @@ router.get(
 // Webhook endpoint (no auth - Stripe will verify signature)
 // IMPORTANT: This route must use raw body, not JSON parsed body
 router.post('/webhook', paymentController.handleWebhook);
+router.post('/cancel', authenticate, paymentController.cancelPayment);
 
 module.exports = router;
