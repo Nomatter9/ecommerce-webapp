@@ -34,8 +34,12 @@ db.OrderItem = require('./OrderItem')(sequelize, Sequelize);
 db.Address = require('./Address')(sequelize, Sequelize);
 db.Review = require('./Review')(sequelize, Sequelize);
 db.Wishlist = require('./Wishlist')(sequelize, Sequelize);
+<<<<<<< HEAD
 db.Payment = require('./Payment')(sequelize, Sequelize); 
 
+=======
+db.Payment = require('./Payment')(sequelize, Sequelize);
+>>>>>>> 333a21fc14a022e72b08a3d5b336c2a532fa6499
 
 // Define associations
 // User associations
@@ -95,5 +99,11 @@ db.Wishlist.belongsTo(db.Product, { foreignKey: 'productId', as: 'product' });
 // Payment associations                                                
 db.Payment.belongsTo(db.Order, { foreignKey: 'orderId', as: 'order' });
 db.Payment.belongsTo(db.User,  { foreignKey: 'userId',  as: 'user'  });
+
+// Payment associations
+db.Payment.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
+db.Payment.belongsTo(db.Order, { foreignKey: 'orderId', as: 'order' });
+db.User.hasMany(db.Payment, { foreignKey: 'userId', as: 'payments' });
+db.Order.hasMany(db.Payment, { foreignKey: 'orderId', as: 'payments' });
 
 module.exports = db;
