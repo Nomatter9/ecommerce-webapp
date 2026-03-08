@@ -34,12 +34,10 @@ db.OrderItem = require('./OrderItem')(sequelize, Sequelize);
 db.Address = require('./Address')(sequelize, Sequelize);
 db.Review = require('./Review')(sequelize, Sequelize);
 db.Wishlist = require('./Wishlist')(sequelize, Sequelize);
-<<<<<<< HEAD
 db.Payment = require('./Payment')(sequelize, Sequelize); 
 
-=======
-db.Payment = require('./Payment')(sequelize, Sequelize);
->>>>>>> 333a21fc14a022e72b08a3d5b336c2a532fa6499
+
+
 
 // Define associations
 // User associations
@@ -82,7 +80,6 @@ db.CartItem.belongsTo(db.Product, { foreignKey: 'productId', as: 'product' });
 db.Order.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
 db.Order.belongsTo(db.Address, { foreignKey: 'shippingAddressId', as: 'shippingAddress' });
 db.Order.hasMany(db.OrderItem, { foreignKey: 'orderId', as: 'items' });
-db.Order.hasOne(db.Payment, { foreignKey: 'orderId', as: 'payment' }); 
 
 
 // OrderItem associations
@@ -96,9 +93,7 @@ db.Review.belongsTo(db.Product, { foreignKey: 'productId', as: 'product' });
 // Wishlist associations
 db.Wishlist.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
 db.Wishlist.belongsTo(db.Product, { foreignKey: 'productId', as: 'product' });
-// Payment associations                                                
-db.Payment.belongsTo(db.Order, { foreignKey: 'orderId', as: 'order' });
-db.Payment.belongsTo(db.User,  { foreignKey: 'userId',  as: 'user'  });
+
 
 // Payment associations
 db.Payment.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
